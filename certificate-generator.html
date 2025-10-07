@@ -1,0 +1,1126 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Certificate Generator & Email Tool</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <style>
+        body {
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #4f46e5, #7c3aed);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+
+        .header h1 {
+            margin: 0;
+            font-size: 2.5rem;
+            font-weight: 700;
+        }
+
+        .header p {
+            margin: 10px 0 0 0;
+            opacity: 0.9;
+            font-size: 1.1rem;
+        }
+
+        .main-content {
+            padding: 40px;
+        }
+
+        .step {
+            margin-bottom: 40px;
+            padding: 30px;
+            border: 2px solid #e5e7eb;
+            border-radius: 15px;
+            background: #f9fafb;
+        }
+
+        .step.active {
+            border-color: #4f46e5;
+            background: #f0f4ff;
+        }
+
+        .step-header {
+            display: flex;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .step-number {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: #4f46e5;
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            margin-right: 15px;
+        }
+
+        .step-title {
+            font-size: 1.5rem;
+            font-weight: 600;
+            color: #1f2937;
+        }
+
+        .upload-area {
+            border: 3px dashed #d1d5db;
+            border-radius: 12px;
+            padding: 40px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            background: white;
+        }
+
+        .upload-area:hover {
+            border-color: #4f46e5;
+            background: #f0f4ff;
+        }
+
+        .upload-area.dragover {
+            border-color: #4f46e5;
+            background: #f0f4ff;
+            transform: scale(1.02);
+        }
+
+        .file-input {
+            display: none;
+        }
+
+        .upload-icon {
+            font-size: 3rem;
+            color: #9ca3af;
+            margin-bottom: 15px;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: #374151;
+        }
+
+        .form-control {
+            width: 100%;
+            padding: 12px 16px;
+            border: 2px solid #e5e7eb;
+            border-radius: 8px;
+            font-size: 16px;
+            transition: border-color 0.3s ease;
+        }
+
+        .form-control:focus {
+            outline: none;
+            border-color: #4f46e5;
+            box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.1);
+        }
+
+        .form-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+        }
+
+        .btn {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .btn-primary {
+            background: #4f46e5;
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: #4338ca;
+            transform: translateY(-2px);
+        }
+
+        .btn-success {
+            background: #10b981;
+            color: white;
+        }
+
+        .btn-success:hover {
+            background: #059669;
+        }
+
+        .btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .preview-area {
+            border: 2px solid #e5e7eb;
+            border-radius: 12px;
+            padding: 20px;
+            background: white;
+            text-align: center;
+            min-height: 200px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .certificate-preview {
+            position: relative;
+            display: inline-block;
+            max-width: 100%;
+        }
+
+        /* Alignment guide lines */
+        .guide-line {
+            position: absolute;
+            background: rgba(79,70,229,0.85);
+            pointer-events: none;
+            z-index: 999;
+        }
+
+        .guide-vertical {
+            width: 2px;
+            top: 0;
+        }
+
+        .guide-horizontal {
+            height: 2px;
+            left: 0;
+        }
+
+        .guide-label {
+            position: absolute;
+            background: rgba(79,70,229,0.95);
+            color: white;
+            padding: 2px 6px;
+            font-size: 12px;
+            border-radius: 4px;
+            transform: translateY(-100%);
+            pointer-events: none;
+            z-index: 1000;
+        }
+
+        .certificate-preview img {
+            max-width: 100%;
+            height: auto;
+            border-radius: 8px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+        }
+
+        .name-overlay {
+            position: absolute;
+            color: #1f2937;
+            font-weight: bold;
+            pointer-events: all;
+            cursor: move;
+            text-shadow: 1px 1px 2px rgba(255,255,255,0.8);
+            user-select: none;
+            padding: 8px;
+            border: 2px dashed transparent;
+            border-radius: 4px;
+            transition: all 0.2s ease;
+        }
+
+        .name-overlay:hover {
+            border-color: #4f46e5;
+            background: rgba(79, 70, 229, 0.1);
+        }
+
+        .name-overlay.dragging {
+            border-color: #4f46e5;
+            background: rgba(79, 70, 229, 0.2);
+            transform: scale(1.05);
+            z-index: 1000;
+        }
+
+        .certificate-preview {
+            position: relative;
+            display: inline-block;
+            max-width: 100%;
+            user-select: none;
+        }
+
+        .progress-bar {
+            width: 100%;
+            height: 8px;
+            background: #e5e7eb;
+            border-radius: 4px;
+            overflow: hidden;
+            margin: 20px 0;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #4f46e5, #7c3aed);
+            width: 0%;
+            transition: width 0.3s ease;
+        }
+
+        .status-log {
+            background: #f3f4f6;
+            border-radius: 8px;
+            padding: 20px;
+            max-height: 300px;
+            overflow-y: auto;
+            font-family: 'Courier New', monospace;
+            font-size: 14px;
+        }
+
+        .status-item {
+            margin-bottom: 8px;
+            padding: 8px;
+            border-radius: 4px;
+        }
+
+        .status-success {
+            background: #d1fae5;
+            color: #065f46;
+        }
+
+        .status-error {
+            background: #fee2e2;
+            color: #991b1b;
+        }
+
+        .status-info {
+            background: #dbeafe;
+            color: #1e40af;
+        }
+
+        .csv-sample {
+            background: #f8fafc;
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+            padding: 15px;
+            font-family: 'Courier New', monospace;
+            font-size: 14px;
+            margin-top: 10px;
+        }
+
+        .alert {
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
+
+        .alert-warning {
+            background: #fef3cd;
+            border: 1px solid #fecaca;
+            color: #92400e;
+        }
+
+        /* Footer styles */
+        .site-footer {
+            background: #111827;
+            color: #9ca3af;
+            padding: 16px 20px;
+            text-align: center;
+            font-size: 14px;
+        }
+
+        .site-footer a {
+            color: #c7d2fe;
+            text-decoration: none;
+            font-weight: 600;
+            margin-left: 6px;
+        }
+        .site-footer a:hover {
+            text-decoration: underline;
+        }
+
+        @media (max-width: 768px) {
+            .form-row {
+                grid-template-columns: 1fr;
+            }
+            
+            .main-content {
+                padding: 20px;
+            }
+            
+            .header {
+                padding: 20px;
+            }
+            
+            .header h1 {
+                font-size: 2rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🎓 Certificate Generator</h1>
+            <p>Upload template, add names, and generate personalized certificates</p>
+        </div>
+
+        <div class="main-content">
+            <div class="alert alert-warning">
+                <strong>Demo Mode:</strong> This tool generates certificates locally in your browser. Email functionality is simulated - in a real implementation, you'd need a backend server to send actual emails.
+            </div>
+
+            <!-- Step 1: Upload Template -->
+            <div class="step active" id="step1">
+                <div class="step-header">
+                    <div class="step-number">1</div>
+                    <div class="step-title">Upload Certificate Template</div>
+                </div>
+                <div class="upload-area" onclick="document.getElementById('templateInput').click()">
+                    <div class="upload-icon">📄</div>
+                    <h3>Click to upload certificate template</h3>
+                    <p>Supports JPG, PNG images</p>
+                    <input type="file" id="templateInput" class="file-input" accept="image/*">
+                </div>
+                <div id="templatePreview" class="preview-area" style="display: none;">
+                    <div class="certificate-preview" id="certificatePreview">
+                        <img id="templateImage" src="" alt="Certificate Template">
+                        <div class="name-overlay" id="nameOverlay">Sample Name</div>
+                        <div class="guide-line guide-vertical" id="guideV" style="display:none;"></div>
+                        <div class="guide-line guide-horizontal" id="guideH" style="display:none;"></div>
+                        <div class="guide-label" id="guideLabel" style="display:none;">(0,0)</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Step 2: Upload CSV -->
+            <div class="step" id="step2">
+                <div class="step-header">
+                    <div class="step-number">2</div>
+                    <div class="step-title">Upload Recipients List (CSV)</div>
+                </div>
+                <div class="upload-area" onclick="document.getElementById('csvInput').click()">
+                    <div class="upload-icon">📊</div>
+                    <h3>Click to upload CSV file</h3>
+                    <p>Must contain Name and Email columns</p>
+                    <input type="file" id="csvInput" class="file-input" accept=".csv">
+                </div>
+                <div class="csv-sample">
+                    <strong>Sample CSV format:</strong><br>
+                    Name,Email<br>
+                    Nizam Uddin SK,nizam@example.com<br>
+                    Rahul Das,rahul@example.com<br>
+                    John Smith,john@example.com<br>
+                    Jane Doe,jane@example.com
+                </div>
+                <button class="btn btn-primary" onclick="loadSampleData()" style="margin-top: 10px;">
+                    📋 Load Sample Data
+                </button>
+                <div id="csvPreview" style="display: none; margin-top: 20px;">
+                    <h4>Recipients Preview:</h4>
+                    <div id="csvData"></div>
+                </div>
+            </div>
+
+            <!-- Step 3: Configure Settings -->
+            <div class="step" id="step3">
+                <div class="step-header">
+                    <div class="step-number">3</div>
+                    <div class="step-title">Configure Certificate Settings</div>
+                </div>
+                <div style="background: #e0f2fe; border: 1px solid #0288d1; border-radius: 8px; padding: 15px; margin-bottom: 20px;">
+                    <strong>💡 Pro Tip:</strong> You can drag the "Sample Name" text directly on the certificate preview to position it perfectly! The coordinates will update automatically.
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="nameX">Name Position X (pixels)</label>
+                        <input type="number" id="nameX" class="form-control" value="400" min="0">
+                    </div>
+                    <div class="form-group">
+                        <label for="nameY">Name Position Y (pixels)</label>
+                        <input type="number" id="nameY" class="form-control" value="300" min="0">
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="fontSize">Font Size (pixels)</label>
+                        <input type="number" id="fontSize" class="form-control" value="48" min="12" max="200">
+                    </div>
+                    <div class="form-group">
+                        <label for="fontFamily">Font Family</label>
+                        <select id="fontFamily" class="form-control">
+                            <option value="Arial">Arial</option>
+                            <option value="Times New Roman">Times New Roman</option>
+                            <option value="Helvetica">Helvetica</option>
+                            <option value="Georgia">Georgia</option>
+                            <option value="Verdana">Verdana</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label for="textColor">Text Color</label>
+                    <input type="color" id="textColor" class="form-control" value="#000000">
+                </div>
+                <button class="btn btn-primary" onclick="updatePreview()">
+                    🔄 Update Preview
+                </button>
+            </div>
+
+            <!-- Step 4: Email Settings -->
+            <div class="step" id="step4">
+                <div class="step-header">
+                    <div class="step-number">4</div>
+                    <div class="step-title">Email Settings (Demo)</div>
+                </div>
+                <div class="form-group">
+                    <label for="emailSubject">Email Subject</label>
+                    <input type="text" id="emailSubject" class="form-control" value="Your Certificate of Achievement">
+                </div>
+                <div class="form-group">
+                    <label for="emailBody">Email Message</label>
+                    <textarea id="emailBody" class="form-control" rows="4" placeholder="Dear [Name],&#10;&#10;Congratulations! Please find your certificate attached.&#10;&#10;Best regards,&#10;Certificate Team">Dear [Name],
+
+Congratulations! Please find your certificate attached.
+
+Best regards,
+Certificate Team</textarea>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="senderName">Sender Name</label>
+                        <input type="text" id="senderName" class="form-control" value="Certificate Team">
+                    </div>
+                    <div class="form-group">
+                        <label for="senderEmail">Sender Email</label>
+                        <input type="email" id="senderEmail" class="form-control" value="certificates@yourcompany.com" placeholder="your-email@domain.com">
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="batchSize">Batch Size (emails per batch)</label>
+                        <input type="number" id="batchSize" class="form-control" value="5" min="1" max="50">
+                    </div>
+                    <div class="form-group">
+                        <label for="batchDelay">Delay Between Batches (seconds)</label>
+                        <input type="number" id="batchDelay" class="form-control" value="10" min="1" max="300">
+                    </div>
+                </div>
+                <div class="form-group" style="margin-top:8px; display:flex; align-items:center; gap:10px;">
+                    <input type="checkbox" id="showGuides" />
+                    <label for="showGuides" style="margin:0;">Show alignment guides for Name Position</label>
+                </div>
+                <div class="form-group" style="margin-top:12px;">
+                    <label for="backendUrl">Backend API URL (optional for real email sending)</label>
+                    <input type="text" id="backendUrl" class="form-control" placeholder="http://localhost:3001" value="">
+                </div>
+            </div>
+
+            <!-- Step 5: Generate -->
+            <div class="step" id="step5">
+                <div class="step-header">
+                    <div class="step-number">5</div>
+                    <div class="step-title">Generate & Send Certificates</div>
+                </div>
+                <button class="btn btn-success" id="generateBtn" onclick="generateCertificates()" disabled>
+                    🚀 Generate All Certificates
+                </button>
+                <button class="btn btn-primary" id="downloadReportBtn" onclick="downloadReport()" disabled style="margin-left: 10px;">
+                    📊 Download Report
+                </button>
+                <div class="progress-bar" id="progressContainer" style="display: none;">
+                    <div class="progress-fill" id="progressFill"></div>
+                </div>
+                <div id="statusLog" class="status-log" style="display: none;"></div>
+            </div>
+        </div>
+    </div>
+    <footer class="site-footer" id="siteFooter">
+        © <span id="currentYear"></span> Certificatory — Built with ♥︎
+        <a href="README.md" target="_blank" rel="noopener">Readme</a>
+    </footer>
+
+    <script>
+        // Fill current year in footer
+        document.addEventListener('DOMContentLoaded', () => {
+            const y = new Date().getFullYear();
+            const el = document.getElementById('currentYear');
+            if (el) el.textContent = y;
+        });
+
+        let templateImage = null;
+        let csvData = [];
+        let currentStep = 1;
+        let processingLog = [];
+
+        // File upload handlers
+        document.getElementById('templateInput').addEventListener('change', handleTemplateUpload);
+        document.getElementById('csvInput').addEventListener('change', handleCSVUpload);
+
+        // Position update handlers
+                ['nameX', 'nameY', 'fontSize', 'textColor'].forEach(id => {
+                    document.getElementById(id).addEventListener('input', updatePreview);
+                });
+                // Update guides when X/Y change or when toggling the checkbox
+                document.getElementById('nameX').addEventListener('input', updateGuides);
+                document.getElementById('nameY').addEventListener('input', updateGuides);
+                const showGuidesCheckbox = document.getElementById('showGuides');
+                if (showGuidesCheckbox) showGuidesCheckbox.addEventListener('change', updateGuides);
+
+        function handleTemplateUpload(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                templateImage = new Image();
+                templateImage.onload = function() {
+                    document.getElementById('templateImage').src = e.target.result;
+                    document.getElementById('templatePreview').style.display = 'block';
+                    updatePreview();
+                    setupDragPositioning();
+                    activateStep(2);
+                };
+                templateImage.src = e.target.result;
+            };
+            reader.readAsDataURL(file);
+        }
+
+        function handleCSVUpload(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const csv = e.target.result;
+                parseCSV(csv);
+            };
+            reader.readAsText(file);
+        }
+
+        function parseCSV(csvText) {
+            const lines = csvText.trim().split('\n');
+            const headers = lines[0].split(',').map(h => h.trim());
+            
+            // Check if first row contains headers
+            const hasHeaders = headers.some(h => 
+                h.toLowerCase().includes('name') || h.toLowerCase().includes('email')
+            );
+            
+            const startIndex = hasHeaders ? 1 : 0;
+            csvData = [];
+            
+            for (let i = startIndex; i < lines.length; i++) {
+                const values = lines[i].split(',').map(v => v.trim());
+                if (values.length >= 2 && values[0] && values[1]) {
+                    csvData.push({
+                        name: values[0],
+                        email: values[1]
+                    });
+                }
+            }
+            
+            displayCSVPreview();
+            activateStep(3);
+            updateGenerateButton();
+        }
+
+        function loadSampleData() {
+            const sampleCSV = `Name,Email
+Nizam Uddin SK,nizam@example.com
+Rahul Das,rahul@example.com
+John Smith,john@example.com
+Jane Doe,jane@example.com
+Mike Johnson,mike@example.com
+Sarah Wilson,sarah@example.com
+David Brown,david@example.com
+Lisa Garcia,lisa@example.com`;
+            
+            parseCSV(sampleCSV);
+            addStatusLog('Sample data loaded successfully!', 'success');
+        }
+
+        function displayCSVPreview() {
+            const preview = document.getElementById('csvPreview');
+            const dataDiv = document.getElementById('csvData');
+            
+            let html = `<p><strong>${csvData.length} recipients found:</strong></p>`;
+            html += '<div style="max-height: 200px; overflow-y: auto;">';
+            
+            csvData.slice(0, 10).forEach((person, index) => {
+                html += `<div style="padding: 5px; border-bottom: 1px solid #eee;">
+                    ${index + 1}. ${person.name} (${person.email})
+                </div>`;
+            });
+            
+            if (csvData.length > 10) {
+                html += `<div style="padding: 10px; font-style: italic;">
+                    ... and ${csvData.length - 10} more recipients
+                </div>`;
+            }
+            
+            html += '</div>';
+            dataDiv.innerHTML = html;
+            preview.style.display = 'block';
+        }
+
+        function updatePreview() {
+            if (!templateImage) return;
+            
+            const overlay = document.getElementById('nameOverlay');
+            const nameX = document.getElementById('nameX').value;
+            const nameY = document.getElementById('nameY').value;
+            const fontSize = document.getElementById('fontSize').value;
+            const textColor = document.getElementById('textColor').value;
+            const fontFamily = document.getElementById('fontFamily').value;
+            
+            overlay.style.left = nameX + 'px';
+            overlay.style.top = nameY + 'px';
+            overlay.style.fontSize = fontSize + 'px';
+            overlay.style.color = textColor;
+            overlay.style.fontFamily = fontFamily;
+            updateGuides();
+        }
+
+        // Drag functionality for name positioning
+        function setupDragPositioning() {
+            const overlay = document.getElementById('nameOverlay');
+            let isDragging = false;
+            let startX, startY, initialLeft, initialTop;
+
+            overlay.addEventListener('mousedown', (e) => {
+                isDragging = true;
+                overlay.classList.add('dragging');
+                
+                const rect = overlay.getBoundingClientRect();
+                const parentRect = overlay.parentElement.getBoundingClientRect();
+                
+                startX = e.clientX;
+                startY = e.clientY;
+                initialLeft = rect.left - parentRect.left;
+                initialTop = rect.top - parentRect.top;
+                
+                e.preventDefault();
+            });
+
+            document.addEventListener('mousemove', (e) => {
+                if (!isDragging) return;
+                
+                const deltaX = e.clientX - startX;
+                const deltaY = e.clientY - startY;
+                
+                const newLeft = Math.max(0, initialLeft + deltaX);
+                const newTop = Math.max(0, initialTop + deltaY);
+                
+                overlay.style.left = newLeft + 'px';
+                overlay.style.top = newTop + 'px';
+                
+                // Update input fields
+                document.getElementById('nameX').value = Math.round(newLeft);
+                document.getElementById('nameY').value = Math.round(newTop);
+                updateGuides();
+            });
+
+            document.addEventListener('mouseup', () => {
+                if (isDragging) {
+                    isDragging = false;
+                    overlay.classList.remove('dragging');
+                    updateGuides();
+                }
+            });
+        }
+
+        // Update alignment guides positions and visibility
+        function updateGuides() {
+            const show = document.getElementById('showGuides') && document.getElementById('showGuides').checked;
+            const guideV = document.getElementById('guideV');
+            const guideH = document.getElementById('guideH');
+            const guideLabel = document.getElementById('guideLabel');
+            const preview = document.getElementById('certificatePreview');
+            const overlay = document.getElementById('nameOverlay');
+            const nameX = parseInt(document.getElementById('nameX').value || '0', 10);
+            const nameY = parseInt(document.getElementById('nameY').value || '0', 10);
+
+            if (!preview || !overlay) return;
+
+            if (!show) {
+                guideV.style.display = 'none';
+                guideH.style.display = 'none';
+                guideLabel.style.display = 'none';
+                return;
+            }
+
+            // Position vertical guide relative to preview's left
+            const previewRect = preview.getBoundingClientRect();
+            // If templateImage has natural dimensions larger than display, we assume overlay coords map to displayed pixels.
+            const x = nameX;
+            const y = nameY;
+
+            guideV.style.display = 'block';
+            guideV.style.left = x + 'px';
+            guideV.style.height = preview.clientHeight + 'px';
+            guideV.style.top = '0px';
+
+            guideH.style.display = 'block';
+            guideH.style.top = y + 'px';
+            guideH.style.width = preview.clientWidth + 'px';
+            guideH.style.left = '0px';
+
+            guideLabel.style.display = 'block';
+            guideLabel.style.left = (x + 6) + 'px';
+            guideLabel.style.top = (y - 6) + 'px';
+            guideLabel.textContent = `(${x}, ${y})`;
+        }
+
+        function activateStep(stepNumber) {
+            // Remove active class from all steps
+            document.querySelectorAll('.step').forEach(step => {
+                step.classList.remove('active');
+            });
+            
+            // Add active class to current step
+            document.getElementById(`step${stepNumber}`).classList.add('active');
+            currentStep = stepNumber;
+        }
+
+        function updateGenerateButton() {
+            const btn = document.getElementById('generateBtn');
+            const canGenerate = templateImage && csvData.length > 0;
+            btn.disabled = !canGenerate;
+            
+            if (canGenerate) {
+                activateStep(5);
+            }
+        }
+
+        async function generateCertificates() {
+            if (!templateImage || csvData.length === 0) return;
+            
+            const progressContainer = document.getElementById('progressContainer');
+            const progressFill = document.getElementById('progressFill');
+            const statusLog = document.getElementById('statusLog');
+            const generateBtn = document.getElementById('generateBtn');
+            const downloadReportBtn = document.getElementById('downloadReportBtn');
+            
+            progressContainer.style.display = 'block';
+            statusLog.style.display = 'block';
+            statusLog.innerHTML = '';
+            generateBtn.disabled = true;
+            downloadReportBtn.disabled = true;
+            processingLog = [];
+            
+            addStatusLog('Starting certificate generation...', 'info');
+            
+            const settings = {
+                nameX: parseInt(document.getElementById('nameX').value),
+                nameY: parseInt(document.getElementById('nameY').value),
+                fontSize: parseInt(document.getElementById('fontSize').value),
+                textColor: document.getElementById('textColor').value,
+                fontFamily: document.getElementById('fontFamily').value,
+                emailSubject: document.getElementById('emailSubject').value,
+                emailBody: document.getElementById('emailBody').value,
+                senderName: document.getElementById('senderName').value,
+                senderEmail: document.getElementById('senderEmail').value,
+                batchSize: parseInt(document.getElementById('batchSize').value),
+                batchDelay: parseInt(document.getElementById('batchDelay').value)
+            };
+            
+            // Process in batches
+            const batchSize = settings.batchSize;
+            const totalBatches = Math.ceil(csvData.length / batchSize);
+            
+            addStatusLog(`Processing ${csvData.length} certificates in ${totalBatches} batches of ${batchSize}`, 'info');
+            
+            for (let batchIndex = 0; batchIndex < totalBatches; batchIndex++) {
+                const startIndex = batchIndex * batchSize;
+                const endIndex = Math.min(startIndex + batchSize, csvData.length);
+                const batch = csvData.slice(startIndex, endIndex);
+                
+                addStatusLog(`📦 Processing batch ${batchIndex + 1}/${totalBatches} (${batch.length} certificates)`, 'info');
+                
+                // Process batch
+                for (let i = 0; i < batch.length; i++) {
+                    const person = batch[i];
+                    const overallIndex = startIndex + i;
+                    const progress = ((overallIndex + 1) / csvData.length) * 100;
+                    progressFill.style.width = progress + '%';
+                    
+                    const logEntry = {
+                        timestamp: new Date().toISOString(),
+                        name: person.name,
+                        email: person.email,
+                        status: 'processing',
+                        error: null
+                    };
+                    
+                    try {
+                        addStatusLog(`Generating certificate for ${person.name}...`, 'info');
+                        
+                        // Create certificate
+                        const certificateBlob = await createCertificatePDF(person.name, settings);
+                        
+                        // Send email via backend if configured, otherwise fallback to simulated download
+                        await simulateEmailSend(person, certificateBlob, settings);
+                        
+                        logEntry.status = 'success';
+                        addStatusLog(`✅ Certificate sent to ${person.name} (${person.email})`, 'success');
+                        
+                        // Small delay between individual certificates
+                        await new Promise(resolve => setTimeout(resolve, 200));
+                        
+                    } catch (error) {
+                        logEntry.status = 'failed';
+                        logEntry.error = error.message || String(error);
+                        addStatusLog(`❌ Failed to process ${person.name}: ${logEntry.error}`, 'error');
+                    }
+                    
+                    processingLog.push(logEntry);
+                }
+                
+                // Delay between batches (except for the last batch)
+                if (batchIndex < totalBatches - 1) {
+                    addStatusLog(`⏳ Waiting ${settings.batchDelay} seconds before next batch...`, 'info');
+                    await new Promise(resolve => setTimeout(resolve, settings.batchDelay * 1000));
+                }
+            }
+            
+            const successCount = processingLog.filter(log => log.status === 'success').length;
+            const failedCount = processingLog.filter(log => log.status === 'failed').length;
+            
+            addStatusLog(`🎉 Completed! ${successCount} certificates sent successfully, ${failedCount} failed.`, 'success');
+            generateBtn.disabled = false;
+            downloadReportBtn.disabled = false;
+        }
+
+        async function createCertificatePDF(name, settings) {
+            return new Promise((resolve) => {
+                // Create a canvas to render the certificate
+                const canvas = document.createElement('canvas');
+                const ctx = canvas.getContext('2d');
+                
+                // Set canvas size to match template image
+                canvas.width = templateImage.width;
+                canvas.height = templateImage.height;
+                
+                // Draw template image
+                ctx.drawImage(templateImage, 0, 0);
+                
+                // Draw name text
+                ctx.font = `${settings.fontSize}px ${settings.fontFamily}`;
+                ctx.fillStyle = settings.textColor;
+                ctx.textAlign = 'center';
+                ctx.fillText(name, settings.nameX, settings.nameY);
+                
+                // Convert canvas to blob
+                canvas.toBlob((blob) => {
+                    resolve(blob);
+                }, 'image/png');
+            });
+        }
+
+        // Convert blob to base64 string (no data: prefix)
+        function blobToBase64(blob) {
+            return new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                reader.onloadend = () => {
+                    const dataUrl = reader.result;
+                    const base64 = dataUrl.split(',')[1];
+                    resolve(base64);
+                };
+                reader.onerror = reject;
+                reader.readAsDataURL(blob);
+            });
+        }
+
+        async function simulateEmailSend(person, certificateBlob, settings) {
+            const backendUrl = document.getElementById('backendUrl').value.trim();
+
+            // If no backend provided, keep demo behaviour (no auto-download by default)
+            if (!backendUrl) {
+                return new Promise((resolve) => {
+                    setTimeout(() => {
+                        // Demo: do nothing (certificate available in memory)
+                        resolve();
+                    }, 200);
+                });
+            }
+
+            // Otherwise, send to backend API
+            try {
+                const base64 = await blobToBase64(certificateBlob);
+
+                const payload = {
+                    name: person.name,
+                    email: person.email,
+                    certificateBlob: base64,
+                    filename: `${person.name.replace(/[^a-zA-Z0-9]/g, '_')}_certificate.png`,
+                    settings: {
+                        subject: settings.emailSubject,
+                        body: settings.emailBody,
+                        senderName: settings.senderName,
+                        senderEmail: settings.senderEmail
+                    }
+                };
+
+                const url = backendUrl.replace(/\/$/, '') + '/api/send-certificate';
+
+                const res = await fetch(url, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+
+                if (!res.ok) {
+                    const text = await res.text();
+                    throw new Error(`Backend error ${res.status}: ${text}`);
+                }
+
+                return res.json();
+            } catch (err) {
+                // Re-throw for outer handler
+                throw err;
+            }
+        }
+
+        function downloadReport() {
+            if (processingLog.length === 0) return;
+            
+            // Create CSV report
+            let csvContent = 'Timestamp,Name,Email,Status,Error\n';
+            
+            processingLog.forEach(log => {
+                const row = [
+                    log.timestamp,
+                    `"${log.name}"`,
+                    log.email,
+                    log.status,
+                    log.error ? `"${log.error}"` : ''
+                ].join(',');
+                csvContent += row + '\n';
+            });
+            
+            // Add summary
+            const successCount = processingLog.filter(log => log.status === 'success').length;
+            const failedCount = processingLog.filter(log => log.status === 'failed').length;
+            
+            csvContent += '\n';
+            csvContent += `Summary,,,,\n`;
+            csvContent += `Total Processed,${processingLog.length},,,\n`;
+            csvContent += `Successful,${successCount},,,\n`;
+            csvContent += `Failed,${failedCount},,,\n`;
+            
+            // Download the report
+            const blob = new Blob([csvContent], { type: 'text/csv' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `certificate_report_${new Date().toISOString().split('T')[0]}.csv`;
+            a.click();
+            URL.revokeObjectURL(url);
+            
+            addStatusLog('📊 Report downloaded successfully!', 'success');
+        }
+
+        function addStatusLog(message, type) {
+            const statusLog = document.getElementById('statusLog');
+            const item = document.createElement('div');
+            item.className = `status-item status-${type}`;
+            item.textContent = `${new Date().toLocaleTimeString()}: ${message}`;
+            statusLog.appendChild(item);
+            statusLog.scrollTop = statusLog.scrollHeight;
+        }
+
+        // Drag and drop functionality
+        function setupDragAndDrop() {
+            const uploadAreas = document.querySelectorAll('.upload-area');
+            
+            uploadAreas.forEach(area => {
+                area.addEventListener('dragover', (e) => {
+                    e.preventDefault();
+                    area.classList.add('dragover');
+                });
+                
+                area.addEventListener('dragleave', () => {
+                    area.classList.remove('dragover');
+                });
+                
+                area.addEventListener('drop', (e) => {
+                    e.preventDefault();
+                    area.classList.remove('dragover');
+                    
+                    const files = e.dataTransfer.files;
+                    if (files.length > 0) {
+                        const input = area.querySelector('input[type="file"]');
+                        input.files = files;
+                        input.dispatchEvent(new Event('change'));
+                    }
+                });
+            });
+        }
+
+        // Initialize drag and drop
+        setupDragAndDrop();
+    </script>
+    <style>
+        /* Footer styles */
+        .site-footer {
+            background: linear-gradient(90deg, rgba(79,70,229,0.06), rgba(124,58,237,0.04));
+            border-top: 1px solid #e6e7f8;
+            padding: 18px 20px;
+            text-align: center;
+            font-size: 14px;
+            color: #374151;
+        }
+
+        .site-footer a {
+            color: #4f46e5;
+            text-decoration: none;
+            font-weight: 600;
+        }
+
+        .site-footer a:hover {
+            text-decoration: underline;
+        }
+    </style>
+
+    <!-- Footer -->
+    <footer class="site-footer">
+        <div id="all reserve by certificatory">© <span id="2025"></span> <strong>Certificatory</strong> — Built with care. <a href="https://github.com/nizamus01/certificatory" target="_blank" rel="noopener">Repository</a></div>
+    </footer>
+
+    <script>
+        // Set dynamic year in footer
+        (function setFooterYear(){
+            try {
+                const yearEl = document.getElementById('footerYear');
+                if (yearEl) yearEl.textContent = new Date().getFullYear();
+            } catch (e) {
+                // ignore
+            }
+        })();
+    </script>
+</body>
+</html>
