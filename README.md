@@ -67,3 +67,14 @@ If you'd like, I can:
 - Implement a queuing worker for retries and concurrency control.
 
 Enjoy — tell me which next step you'd like me to implement and I'll do it.
+
+## GitHub Actions + Vercel (CI)
+
+This repo includes a GitHub Actions workflow `.github/workflows/vercel-deploy.yml` that triggers on pushes to `main` and deploys to Vercel using the community action.
+
+To enable it, add these repository secrets under Settings → Secrets:
+- `VERCEL_TOKEN` — your personal Vercel token (from your Vercel account settings).
+- `VERCEL_ORG_ID` — your Vercel organization ID.
+- `VERCEL_PROJECT_ID` — your Vercel project ID.
+
+After adding the secrets, pushes to `main` will automatically trigger a production deploy.
