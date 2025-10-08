@@ -26,11 +26,13 @@ module.exports = async (req, res) => {
       } : undefined
     });
 
-    const from = (settings && settings.senderEmail) || process.env.EMAIL_FROM || process.env.EMAIL_USER || 'no-reply@certificatory.example';
+    // Prefer an explicit EMAIL_FROM env var, otherwise fall back to the SMTP user
+    // Many SMTP providers require the From address to match the authenticated account.
+    const fromAddress = process.env.EMAIL_FROM || process.env.EMAIL_USER;
     const fromName = (settings && settings.senderName) || 'Certificatory';
 
     const mailOptions = {
-      from: `${fromName} <${from}>`,
+      from: `${fromName} <${fromAddress}>`,
       to: email,
       subject: (settings && settings.subject) ? settings.subject.replace('[Name]', name || '') : `Your Certificate`,
       text: (settings && settings.body) ? settings.body.replace('[Name]', name || '') : `Hello ${name || ''},\n\nPlease find your certificate attached.`,
@@ -43,10 +45,17 @@ module.exports = async (req, res) => {
       ]
     };
 
-    // Send email (do not call verify to avoid issues in serverless env)
-    const info = await transporter.sendMail(mailOptions);
+    // Helpful debug logs for Vercel function logs - remove or reduce in production
+    console.log('send-certificate: mailOptions prepared for', email);
 
-    return res.status(200).json({ success: true, info });
+    try {
+      const info = await transporter.sendMail(mailOptions);
+      console.log('send-certificate: sendMail info:', info);
+      return res.status(200).json({ success: true, info });
+    } catch (sendErr) {
+      console.error('send-certificate: sendMail error:', sendErr && (sendErr.stack || sendErr.message || sendErr));
+      return res.status(502).json({ success: false, error: sendErr.message || String(sendErr) });
+    }
   } catch (err) {
     console.error('Error in /api/send-certificate:', err && (err.stack || err.message || err));
     return res.status(500).json({ success: false, error: err.message || String(err) });
